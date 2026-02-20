@@ -37,12 +37,8 @@ public class MembersController(IMembersRepository membersRepository) : BaseApiCo
     [HttpPut]
     public async Task<ActionResult> UpdateMember(MemberUpdateRequest request)
     {
-        var memberId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (memberId == null)
-        {
-            return BadRequest("No id found in token");
-        }
+        var memberId = User.GetMemberId();
+        var member = await membersRepository.GetMemberForUpdate(memberId);
 
         var member = await membersRepository.GetMemberAsync(memberId);
 
@@ -56,6 +52,7 @@ public class MembersController(IMembersRepository membersRepository) : BaseApiCo
         member.Description = request.Description ?? member.Description;
         member.City = request.City ?? member.City;
         member.Country = request.Country ?? member.Country;
+        member.User.DisplayName = request.DisplayName ?? member.User.DisplayName;
 
         membersRepository.Update(member);
 
