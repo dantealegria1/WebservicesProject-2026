@@ -1,4 +1,3 @@
-
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
@@ -15,11 +14,13 @@ import { MembersService } from '../../../core/services/members-service';
 export class MemberDetail implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private accountService = inject(AccountService);
   protected membersService = inject(MembersService);
   protected title = signal<string | undefined>("Profile");
   protected isCurrentUser = computed(() => {
     return this.accountService.currentUser()?.id === this.route.snapshot.paramMap.get('id');
   })
+
   ngOnInit(): void {
     this.title.set(this.route.firstChild?.snapshot?.title);
 
