@@ -22,4 +22,8 @@ export class MembersService {
   getPhotos(id: string) {
     return this.http.get<Photo[]>(`${this.baseUrl}members/${id}/photos`);
   }
+
+  updateMember(member: EditableMember) {
+    return this.http.put(this.baseUrl + "members", member);
+  }
 }

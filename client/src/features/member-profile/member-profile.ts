@@ -18,7 +18,7 @@ export class MemberProfile implements OnInit {
     }
   };
   private route = inject(ActivatedRoute);
-  private toast = inject(ToastService);
+  private toast: ToastService = inject(ToastService);
   protected member = signal<Member | undefined>(undefined);
   protected membersService = inject(MembersService);
   protected editableMember: EditableMember = {
@@ -48,7 +48,13 @@ this.editableMember = {
   updateProfile() {
     if (!this.member()) return;
     const updatedMember = {...this.member(), ...this.editableMember};
-
+    this.membersService.updateMember(this.editableMember).subscribe({
+      next: () => {
+        this.toast.success('Profile updated successfully');
+        this.membersService.editMode.set(false);
+        this.memberProfileEditForm?.reset(updatedMember);
+      }
+    });
     console.group("UPDATE");
     console.log(updatedMember);
     console.groupEnd();
