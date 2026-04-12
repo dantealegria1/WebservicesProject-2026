@@ -1,22 +1,24 @@
+using API.DTOs;
 using API.Entities;
+using API.Extensions;
+using API.Helpers;
 using API.Interfaces;
 using API.Mappers;
-using API.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using API.DTOs;
 
 namespace API.Controllers;
 
 [Authorize]
 public class MembersController(IMembersRepository membersRepository,
     IPhotoService photoService) : BaseApiController
-    {
+{
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<Member>>> GetMembers()
+    public async Task<ActionResult<IReadOnlyList<Member>>> GetMembers([FromQuery] MemberRequest request)
     {
-        return Ok(await membersRepository.GetMembersAsync());
+        request.CurrentMemberId = User.GetMemberId();
+        
+        return Ok(await membersRepository.GetMembersAsync(request));
     }
 
     [HttpGet("{id}")] // https://localhost:5001/api/members/bob-id
@@ -41,18 +43,16 @@ public class MembersController(IMembersRepository membersRepository,
         var memberId = User.GetMemberId();
         var member = await membersRepository.GetMemberForUpdateAsync(memberId);
 
-        var member = await membersRepository.GetMemberAsync(memberId);
-
         if (member == null)
         {
             return BadRequest("Failed to get member");
         }
 
         member.DisplayName = request.DisplayName ?? member.DisplayName;
-        member.DisplayName = string.IsNullOrEmpty(request.DisplayName) ? member.DisplayName : request.DisplayName;
         member.Description = request.Description ?? member.Description;
         member.City = request.City ?? member.City;
         member.Country = request.Country ?? member.Country;
+
         member.User.DisplayName = request.DisplayName ?? member.User.DisplayName;
 
         membersRepository.Update(member);
@@ -63,7 +63,7 @@ public class MembersController(IMembersRepository membersRepository,
         }
 
         return BadRequest("Failed to update profile");
-    } 
+    }
 
     [HttpPost("photo")]
     public async Task<ActionResult<Photo>> AddPhoto([FromForm] IFormFile file)
@@ -110,16 +110,25 @@ public class MembersController(IMembersRepository membersRepository,
     {
         var member = await membersRepository.GetMemberForUpdateAsync(User.GetMemberId());
 
-        if (member == null) return BadRequest("Token not available in member");
+        if (member == null)
+        {
+            return BadRequest("Token not available in member");
+        }
 
         var photo = member.Photos.SingleOrDefault(p => p.Id == photoId);
 
-        if (member.ImageUrl == photo?.Url || photo == null) return BadRequest("Cannot set photo as main");
+        if (member.ImageUrl == photo?.Url || photo == null)
+        {
+            return BadRequest("Cannot set photo as main");
+        }
 
         member.ImageUrl = photo.Url;
         member.User.ImageUrl = photo.Url;
 
-        if (await membersRepository.SaveAllAsync()) return NoContent();
+        if (await membersRepository.SaveAllAsync())
+        {
+            return NoContent();
+        }
 
         return BadRequest("Some error happened while setting main photo");
     }

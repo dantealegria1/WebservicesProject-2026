@@ -19,6 +19,7 @@
       }
       <a routerLink="/errors" routerLinkActive="text-accent">Errors</a>
     </nav>
+
     @if (busyService.busyRequestCount() > 0) {
       <span class="loading loading-spinner text-accent"></span>
     }
@@ -60,6 +61,7 @@
           <button type="submit" class="btn">Login</button>
         </form>
       }
+
     </div>
   </div>
 </header>
