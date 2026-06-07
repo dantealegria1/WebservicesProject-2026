@@ -30,7 +30,7 @@ export const routes: Routes = [
         children: [
           { path: "", redirectTo: "profile", pathMatch: "full" },
           { path: "profile", component: MemberProfile, title: "Profile",
-            canDeactivate: [preventUnsavedChangesGuard] },
+              canDeactivate: [preventUnsavedChangesGuard] },
           { path: "photos", component: MemberPhotos, title: "Photos" },
           { path: "messages", component: MemberMessages, title: "Messages" },
         ]
