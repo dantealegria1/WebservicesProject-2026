@@ -1,12 +1,7 @@
 @if (member(); as member) {
   <div routerLink="/members/{{member.id}}"
-    class="card cursor-pointer transition-all duration-300 ease-in-out transform hover:-translate-y-2">
+    class="card cursor-pointer transition-all duration-300 ease-in-out transform hover:-translate-y-2 relative">
     <img src="{{member?.imageUrl || './user.jpg'}}" alt="{{member.displayName}} image" class="rounded-lg">
-
-    @if (isOnline()) {
-      <span class="status status-success status-xl absolute top-3 left-3"></span>
-    }
-
     <button (click)="toggleLike($event)" class="absolute top-1 right-1 z-45 btn btn-ghost btn-circle">
       <svg xmlns="http://www.w3.org/2000/svg"
         [attr.fill]="hasLiked() ? 'red' : 'white'"
@@ -18,7 +13,7 @@
       </svg>
     </button>
     <div
-      class="card-actions z-50 absolute bottom-0 w-full px-3 py-1 rounded-b-lg
+      class="card-actions z-40 absolute bottom-0 w-full px-3 py-1 rounded-b-lg
               bg-gradient-to-t from-black via-black/75 to-black/0"
     >
       <div class="flex flex-col text-white">

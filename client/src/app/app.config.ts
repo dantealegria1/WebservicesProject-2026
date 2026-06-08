@@ -14,13 +14,13 @@ export const appConfig: ApplicationConfig = {
     provideZonelessChangeDetection(),
     provideRouter(routes, withViewTransitions()),
     provideHttpClient(withInterceptors([errorInterceptor, jwtInterceptor, loadingInterceptor])),
-        provideAppInitializer(async () => {
+    provideAppInitializer(async () => {
       const initService = inject(InitService);
 
       return new Promise<void>((resolve) => {
         setTimeout(async () => {
           try {
-            await lastValueFrom(initService.init())
+            return lastValueFrom(initService.init())
           } finally {
             const splash = document.getElementById("initial-splash");
 

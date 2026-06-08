@@ -1,18 +1,19 @@
 import { Component, HostListener, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
-
 import { EditableMember, Member } from '../../types/member';
 import { DatePipe } from '@angular/common';
 import { MembersService } from '../../core/services/members-service';
 import { FormsModule, NgForm } from '@angular/forms';
 import { ToastService } from '../../core/services/toast-service';
 import { AccountService } from '../../core/services/account-service';
+import { TimeAgoPipe } from '../../core/pipes/time-ago-pipe';
+
 @Component({
   selector: 'app-member-profile',
-  imports: [DatePipe, FormsModule],
+  imports: [DatePipe, FormsModule, TimeAgoPipe],
   templateUrl: './member-profile.html',
   styleUrl: './member-profile.css'
 })
-export class MemberProfile implements OnInit {
+export class MemberProfile implements OnInit, OnDestroy {
   @ViewChild('memberProfileEditForm') memberProfileEditForm?: NgForm;
   @HostListener('window:beforeunload', ['$event']) notify ($event:BeforeUnloadEvent) {
     if (this.memberProfileEditForm?.dirty) {
@@ -20,7 +21,7 @@ export class MemberProfile implements OnInit {
     }
   };
   private accountService = inject(AccountService);
-  private toast: ToastService = inject(ToastService);
+  private toast = inject(ToastService);
   protected membersService = inject(MembersService);
   protected editableMember: EditableMember = {
     displayName: '',
@@ -28,12 +29,13 @@ export class MemberProfile implements OnInit {
     city: '',
     country: ''
   };
+
   ngOnInit(): void {
-this.editableMember = {
-  displayName: this.membersService.member()?.displayName || '',
-  description: this.membersService.member()?.description || '',
-  city: this.membersService.member()?.city || '',
-  country: this.membersService.member()?.country || ''
+    this.editableMember = {
+      displayName: this.membersService.member()?.displayName || '',
+      description: this.membersService.member()?.description || '',
+      city: this.membersService.member()?.city || '',
+      country: this.membersService.member()?.country || ''
     };
   }
 
@@ -57,10 +59,7 @@ this.editableMember = {
         this.membersService.member.set(updatedMember as Member);
         this.memberProfileEditForm?.reset(updatedMember);
         this.toast.success('Profile updated successfully');
-
-    this.toast.success('Profile updated successfully');
-    this.membersService.editMode.set(false);
+      }
+    });
   }
-});
-}
 }

@@ -16,7 +16,7 @@
         },
         "@schematics/angular:guard": {
           "skipTests": false,
-          "path": "src/core/guars"
+          "path": "src/core/guards"
         },
         "@schematics/angular:interceptor": {
           "skipTests": false,
@@ -29,10 +29,6 @@
         "@schematics/angular:pipe": {
           "skipTests": false,
           "path": "src/core/pipes"
-        },
-        "@schematics/angular:directive": {
-          "skipTests": false,
-          "path": "src/shared/directives"
         }
       },
       "root": "",

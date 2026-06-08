@@ -5,7 +5,6 @@ using API.DTOs;
 using API.Entities;
 using API.Interfaces;
 using API.Mappers;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,7 +13,7 @@ namespace API.Controllers;
 /// <summary>
 /// Account controller.
 /// </summary>
-public class AccountController(UserManager<AppUser> userManager, ITokenService tokenService) : BaseApiController
+public class AccountController(AppDbContext context, ITokenService tokenService) : BaseApiController
 {
     /// <summary>
     /// Creates an User.
@@ -39,11 +38,14 @@ public class AccountController(UserManager<AppUser> userManager, ITokenService t
     [HttpPost("register")]
     public async Task<ActionResult<UserResponse>> Register(RegisterRequest request)
     {
+        if (await EmailExists(request.Email)) return BadRequest("Email is already in use");
+        using var hmac = new HMACSHA512();
         var user = new AppUser
         {
             DisplayName = request.DisplayName,
             Email = request.Email,
-            UserName = request.Email,
+            PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(request.Password)),
+            PasswordSalt = hmac.Key,
             Member = new Member
             {
                 DisplayName = request.DisplayName,
@@ -53,24 +55,10 @@ public class AccountController(UserManager<AppUser> userManager, ITokenService t
                 BirthDay = request.BirthDay
             }
         };
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
 
-        var result = await userManager.CreateAsync(user, request.Password);
-
-        if (!result.Succeeded)
-        {
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError("identity", error.Description);
-            }
-
-            return ValidationProblem();
-        }
-
-        await userManager.AddToRoleAsync(user, "Member");
-
-        await SetRefreshTokenCookie(user);
-
-        return await user.ToDto(tokenService);
+        return user.ToDto(tokenService);
     }
 
     /// <summary>
@@ -85,50 +73,20 @@ public class AccountController(UserManager<AppUser> userManager, ITokenService t
     [HttpPost("login")]
     public async Task<ActionResult<UserResponse>> Login(LoginRequest request)
     {
-        var user = await userManager.FindByEmailAsync(request.Email);
-
+        var user = await context.Users.SingleOrDefaultAsync(u => u.Email == request.Email);
         if (user == null) return Unauthorized("Invalid email or password");
-
-        var result = await userManager.CheckPasswordAsync(user, request.Password);
-
-        if (!result) return Unauthorized("Invalid username or password");
-
-        await SetRefreshTokenCookie(user);
-
-        return await user.ToDto(tokenService);
-    }
-
-    [HttpPost("token")]
-    public async Task<ActionResult<UserResponse>> RefreshToken()
-    {
-        var refreshToken = Request.Cookies["refreshToken"];
-        if (refreshToken == null) return NoContent();
-
-        var user = await userManager.Users
-            .FirstOrDefaultAsync(x => x.RefreshToken == refreshToken && x.RefreshTokenExpiry > DateTime.UtcNow);
-
-        if (user == null) return Unauthorized();
-
-        await SetRefreshTokenCookie(user);
-        
-        return await user.ToDto(tokenService);
-    }
-
-    private async Task SetRefreshTokenCookie(AppUser user)
-    {
-        var refreshToken = tokenService.GenerateRefreshToken();
-        user.RefreshToken = refreshToken;
-        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
-        await userManager.UpdateAsync(user);
-
-        var cookieOptions = new CookieOptions
+        using var hmac = new HMACSHA512(user.PasswordSalt);
+        var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(request.Password));
+        for (var i = 0; i < computedHash.Length; i++)
         {
-            HttpOnly = true, // Not accesible from client side
-            Secure = true, // Only sent over HTTPS
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddDays(7)
-        };
+            if (computedHash[i] != user.PasswordHash[i]) return Unauthorized("Invalid email or password");
+        }
 
-        Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+        return user.ToDto(tokenService);
+    }
+
+    private async Task<bool> EmailExists(string email)
+    {
+        return await context.Users.AnyAsync(u => u.Email.ToLower() == email.ToLower());
     }
 }
